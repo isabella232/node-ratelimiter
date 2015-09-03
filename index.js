@@ -106,6 +106,9 @@ Limiter.prototype.get = function (fn) {
       .set([limit, max, 'PX', ex - Date.now(), 'XX'])
       .set([reset, ex, 'PX', ex - Date.now(), 'XX'])
       .exec(function (err, res) {
+        if(res && Array.isArray(res[0])) {
+          console.log(res);
+        }
         if (err) return fn(err);
         if (!res || !res[0]) return mget();
         n = n - 1;
