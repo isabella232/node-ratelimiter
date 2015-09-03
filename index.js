@@ -66,11 +66,12 @@ Limiter.prototype.get = function (fn) {
   var db = this.db;
 
   function create() {
+    var ex = (Date.now() + duration) / 1000 | 0;
 
 	  db.multi()
       .set([count, max, 'PX', duration, 'NX'])
       .set([limit, max, 'PX', duration, 'NX'])
-      .set([reset, duration, 'PX', duration, 'NX'])
+      .set([reset, ex, 'PX', duration, 'NX'])
       .exec(function (err, res) {
         if (err) return fn(err);
 			  // If the request has failed, it means the values already
@@ -80,7 +81,7 @@ Limiter.prototype.get = function (fn) {
         fn(null, {
           total: max,
           remaining: max,
-          reset: duration
+          reset: ex
         });
       });
   }
@@ -101,7 +102,7 @@ Limiter.prototype.get = function (fn) {
     }
 
     db.multi()
-      .set([count, n - 1, 'PX', ex - Date.now(), 'XX'])
+      .set([count, n - 1, 'PX', ex * 1000 - Date.now(), 'XX'])
       .exec(function (err, res) {
         if (err) return fn(err);
         if (!res || !res[0]) return mget();
