@@ -103,6 +103,8 @@ Limiter.prototype.get = function (fn) {
 
     db.multi()
       .set([count, n - 1, 'PX', ex - Date.now(), 'XX'])
+      .set([limit, max, 'PX', ex - Date.now(), 'XX'])
+      .set([reset, ex, 'PX', ex - Date.now(), 'XX'])
       .exec(function (err, res) {
         if (err) return fn(err);
         if (!res || !res[0]) return mget();
