@@ -66,7 +66,7 @@ Limiter.prototype.get = function (fn) {
   var db = this.db;
 
   function create() {
-    var ex = (Date.now() + duration) / 1000 | 0;
+    var ex = Date.now() + duration;
 
 	  db.multi()
       .set([count, max, 'PX', duration, 'NX'])
@@ -102,7 +102,7 @@ Limiter.prototype.get = function (fn) {
     }
 
     db.multi()
-      .set([count, n - 1, 'PX', ex * 1000 - Date.now(), 'XX'])
+      .set([count, n - 1, 'PX', ex - Date.now(), 'XX'])
       .exec(function (err, res) {
         if (err) return fn(err);
         if (!res || !res[0]) return mget();
