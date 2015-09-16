@@ -62,8 +62,8 @@ describe('Limiter', function() {
         db: db
       });
       limit.get(function(err, res) {
-        var left = res.reset - (Date.now() / 1000);
-        left.should.be.below(60);
+        var left = res.reset - (Date.now());
+        left.should.be.below(60000);
         done();
       });
     });
@@ -105,9 +105,9 @@ describe('Limiter', function() {
           res.remaining.should.equal(1);
           setTimeout(function() {
             limit.get(function(err, res) {
-              var left = res.reset - (Date.now() / 1000);
-              left.should.be.below(2);
+              var left = res.reset - (Date.now());
               res.remaining.should.equal(2);
+              left.should.be.below(2000);
               done();
             });
           }, 3000);
@@ -166,7 +166,7 @@ describe('Limiter', function() {
 
     for (var i = 0; i < clientsCount; ++i) {
       limits.push(new Limiter({
-        duration: 10000,
+        duration: 1000,
         max: max,
         id: 'something',
         db: redis.createClient()
@@ -203,6 +203,8 @@ describe('Limiter', function() {
       }
 
       // Warm up and prepare the data.
+      while( ((Date.now() + 1000) / 1000 | 0) * 1000 - Date.now() > 10 ) {}
+
       limits[0].get(function(err, res) {
         if (err) {
           done(err);

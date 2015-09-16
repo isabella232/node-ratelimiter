@@ -103,8 +103,6 @@ Limiter.prototype.get = function (fn) {
 
     db.multi()
       .set([count, n - 1, 'PX', ex - Date.now(), 'XX'])
-      .set([limit, max, 'PX', ex - Date.now(), 'XX'])
-      .set([reset, ex, 'PX', ex - Date.now(), 'XX'])
       .exec(function (err, res) {
         if(res && Array.isArray(res[0])) {
           console.log(res);
