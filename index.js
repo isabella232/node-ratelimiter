@@ -68,16 +68,18 @@ Limiter.prototype.get = function (fn) {
   function create() {
     var ex = Date.now() + duration;
 
-	  db.multi()
+    db.multi()
       .set([count, max, 'PX', duration, 'NX'])
       .set([limit, max, 'PX', duration, 'NX'])
       .set([reset, ex, 'PX', duration, 'NX'])
       .exec(function (err, res) {
         if (err) return fn(err);
-			  // If the request has failed, it means the values already
-			  // exist in which case we need to get the latest values.
-        if (!res || !res[0]) return mget();
 
+        // If the request has failed, it means the values already
+        // exist in which case we need to get the latest values.
+        if (isFirstReplyNull(res)) return mget();
+
+        
         fn(null, {
           total: max,
           remaining: max,
@@ -90,6 +92,7 @@ Limiter.prototype.get = function (fn) {
     var n = ~~res[0];
     var max = ~~res[1];
     var ex = res[2];
+    var dateNow = Date.now();
 
     if (n <= 0) return done();
 
@@ -102,29 +105,52 @@ Limiter.prototype.get = function (fn) {
     }
 
     db.multi()
-      .set([count, n - 1, 'PX', ex - Date.now(), 'XX'])
+      .set([count, n - 1, 'PX', ex - dateNow, 'XX'])
+      .pexpire([limit, ex - dateNow])
+      .pexpire([reset, ex - dateNow])
       .exec(function (err, res) {
         if(res && Array.isArray(res[0])) {
           console.log(res);
         }
         if (err) return fn(err);
-        if (!res || !res[0]) return mget();
+        if (isFirstReplyNull(res)) return mget();
         n = n - 1;
         done();
       });
   }
 
   function mget() {
-	  db.watch([count], function (err) {
-		  if (err) return fn(err);
-		  db.mget([count, limit, reset], function (err, res) {
-			  if (err) return fn(err);
-			  if (!res[0] && res[0] !== 0) return create();
+    db.watch([count], function (err) {
+      if (err) return fn(err);
+      db.mget([count, limit, reset], function (err, res) {
+        if (err) return fn(err);
+        if (!res[0] && res[0] !== 0) return create();
 
-			  decr(res);
-		  });
-	  });
+        decr(res);
+      });
+    });
   }
 
   mget();
 };
+
+/**
+ * Check whether the first item of multi replies is null,
+ * works with ioredis and node_redis
+ *
+ * @param {Array} replies
+ * @return {Boolean}
+ * @api private
+ */
+
+function isFirstReplyNull(replies) {
+  if (!replies) {
+    return true;
+  }
+
+  return Array.isArray(replies[0]) ?
+    // ioredis
+    !replies[0][1] :
+    // node_redis
+    !replies[0];
+}
