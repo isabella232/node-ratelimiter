@@ -54,7 +54,7 @@ var Limiter = require('..');
     });
 
     describe('.reset', function() {
-      it.only('should represent the next reset time in UTC epoch seconds', function(done) {
+      it('should represent the next reset time in UTC epoch seconds', function(done) {
         var limit = new Limiter({
           max: 5,
           duration: 60000,

@@ -109,9 +109,6 @@ Limiter.prototype.get = function (fn) {
       .pexpire([limit, ex - dateNow])
       .pexpire([reset, ex - dateNow])
       .exec(function (err, res) {
-        if(res && Array.isArray(res[0])) {
-          console.log(res);
-        }
         if (err) return fn(err);
         if (isFirstReplyNull(res)) return mget();
         n = n - 1;
